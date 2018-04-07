@@ -62,7 +62,7 @@
     - name: 'Install OpenVSwitch {{openvswitch_version}}'
       yum: 'name={{item}}'
       with_items:
-        - '/tmp/ovs/openvswitch-{{ovs_version}}/rpm/rpmbuild/RPMS/x86_64/openvswitch-{{ovs_version}}-1.el7.centos.x86_64.rpm'
+        - '/tmp/ovs/openvswitch-{{openvswitch_version}}/rpm/rpmbuild/RPMS/x86_64/openvswitch-{{openvswitch_version}}-1.el7.centos.x86_64.rpm'
       become: true
     - name: Enable openvswitch service
       systemd:
