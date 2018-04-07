@@ -22,7 +22,7 @@
       get_url:
         url: 'http://openvswitch.org/releases/openvswitch-{{openvswitch_version}}.tar.gz'
         dest: '/tmp/openvswitch-{{openvswitch_version}}.tar.gz'
-        checksum: '{{ovs_checksum}}'
+        checksum: '{{openvswitch_checksum}}'
     - name: Create /tmp/ovs directory
       file:
         path: /tmp/ovs
