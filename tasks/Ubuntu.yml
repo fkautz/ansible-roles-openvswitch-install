@@ -18,35 +18,35 @@
         - python-twisted-conch
         - python-zopeinterface
       become: true
-    - name: 'Fetch OpenVSwitch {{ovs_version}}'
+    - name: 'Fetch OpenVSwitch {{openvswitch_version}}'
       get_url:
-        url: 'http://openvswitch.org/releases/openvswitch-{{ovs_version}}.tar.gz'
-        dest: '/tmp/openvswitch-{{ovs_version}}.tar.gz'
+        url: 'http://openvswitch.org/releases/openvswitch-{{openvswitch_version}}.tar.gz'
+        dest: '/tmp/openvswitch-{{openvswitch_version}}.tar.gz'
         checksum: '{{ovs_checksum}}'
     - name: Create /tmp/ovs directory
       file:
         path: /tmp/ovs
         state: directory
         mode: 0755
-    - name: 'Unarchive OpenVSwitch {{ovs_version}}'
+    - name: 'Unarchive OpenVSwitch {{openvswitch_version}}'
       unarchive:
-        src: '/tmp/openvswitch-{{ovs_version}}.tar.gz'
+        src: '/tmp/openvswitch-{{openvswitch_version}}.tar.gz'
         dest: /tmp/ovs
         remote_src: true
-        creates: "/tmp/ovs/openvswitch-{{ ovs_version }}"
-    - name: 'Build OpenVSwitch {{ovs_version}}'
+        creates: "/tmp/ovs/openvswitch-{{ openvswitch_version }}"
+    - name: 'Build OpenVSwitch {{openvswitch_version}}'
       shell: DEB_BUILD_OPTIONS='parallel=8 nocheck' fakeroot debian/rules binary
       args:
-        chdir: '/tmp/ovs/openvswitch-{{ovs_version}}'
-        creates: '/tmp/ovs/libopenvswitch_{{ovs_version}}-1_amd64.deb'
-    - name: 'Install OpenVSwitch {{ovs_version}}'
+        chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
+        creates: '/tmp/ovs/libopenvswitch_{{openvswitch_version}}-1_amd64.deb'
+    - name: 'Install OpenVSwitch {{openvswitch_version}}'
       apt: 'deb={{item}}'
       with_items:
-        - '/tmp/ovs/libopenvswitch_{{ovs_version}}-1_amd64.deb'
-        - '/tmp/ovs/openvswitch-common_{{ovs_version}}-1_amd64.deb'
-        - '/tmp/ovs/openvswitch-switch_{{ovs_version}}-1_amd64.deb'
-        - '/tmp/ovs/python-openvswitch_{{ovs_version}}-1_all.deb'
-        - '/tmp/ovs/openvswitch-vtep_{{ovs_version}}-1_amd64.deb'
+        - '/tmp/ovs/libopenvswitch_{{openvswitch_version}}-1_amd64.deb'
+        - '/tmp/ovs/openvswitch-common_{{openvswitch_version}}-1_amd64.deb'
+        - '/tmp/ovs/openvswitch-switch_{{openvswitch_version}}-1_amd64.deb'
+        - '/tmp/ovs/python-openvswitch_{{openvswitch_version}}-1_all.deb'
+        - '/tmp/ovs/openvswitch-vtep_{{openvswitch_version}}-1_amd64.deb'
       become: true
 
 - name: Enable openvswitch-switch service
