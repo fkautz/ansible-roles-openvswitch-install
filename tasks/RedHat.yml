@@ -18,52 +18,69 @@
         - python-zope-interface
         - libcap-ng-devel
       become: true
-    - name: 'Fetch OpenVSwitch {{openvswitch_version}}'
-      get_url:
-        url: 'http://openvswitch.org/releases/openvswitch-{{openvswitch_version}}.tar.gz'
-        dest: '/tmp/openvswitch-{{openvswitch_version}}.tar.gz'
-        checksum: '{{openvswitch_checksum}}'
-    - name: Create /tmp/ovs directory
-      file:
-        path: /tmp/ovs
-        state: directory
-        mode: 0755
-    - name: 'Unarchive OpenVSwitch {{openvswitch_version}}'
-      unarchive:
-        src: '/tmp/openvswitch-{{openvswitch_version}}.tar.gz'
-        dest: /tmp/ovs
-        remote_src: true
-        creates: "/tmp/ovs/openvswitch-{{ openvswitch_version }}"
-    - name: 'Create rpm SPEC file'
-      shell: "sed -e 's/@VERSION@/0.0.1/' rhel/openvswitch-fedora.spec.in > /tmp/ovs.spec"
-      args:
-        chdir: "/tmp/ovs/openvswitch-{{ openvswitch_version }}"
-        creates: /tmp/ovs.spec
-    - name: 'Install build dependencies for OpenVSwitch {{openvswitch_version}}'
-      shell: yum-builddep /tmp/ovs.spec
-      args:
-        chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
-      become: true
-    - name: 'Boot OpenVSwitch {{openvswitch_version}}'
-      shell: ./boot.sh
-      args:
-        chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
-        creates: '/tmp/ovs/openvswitch-{{openvswitch_version}}/configure'
-    - name: 'Configure OpenVSwitch {{openvswitch_version}}'
-      shell: ./configure
-      args:
-        chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
-        creates: '/tmp/ovs/openvswitch-{{openvswitch_version}}/Makefile'
-    - name: 'Build OpenVSwitch {{openvswitch_version}}'
-      shell: make rpm-fedora
-      args:
-        chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
-        creates: '/tmp/ovs/openvswitch-{{openvswitch_version}}/rpm/rpmbuild/RPMS/x86_64/openvswitch-{{openvswitch_version}}-1.el7.centos.x86_64.rpm'
+    - name: Search for prebuilt packages
+      stat: 'path={{openvswitch_package_cache}}/openvswitch-{{openvswitch_version}}-1.el7.centos.x86_64.rpm'
+      register: openvswitch_package_exists
+    - name: Build OVS
+      block:
+        - name: Create cache directory
+          file:
+            path: '{{openvswitch_package_cache}}'
+            state: directory
+            mode: 0755
+        - name: Create /tmp/ovs directory
+          file:
+            path: /tmp/ovs
+            state: directory
+            mode: 0755
+        - name: 'Fetch OpenVSwitch {{openvswitch_version}}'
+          get_url:
+            url: 'http://openvswitch.org/releases/openvswitch-{{openvswitch_version}}.tar.gz'
+            dest: '{{openvswitch_package_cache}}/openvswitch-{{openvswitch_version}}.tar.gz'
+            checksum: '{{openvswitch_checksum}}'
+          creates: '{{openvswitch_package_cache}}/openvswitch-{{openvswitch_version}}.tar.gz'
+        - name: 'Unarchive OpenVSwitch {{openvswitch_version}}'
+          unarchive:
+            src: '{{openvswitch_package_cache}}/openvswitch-{{openvswitch_version}}.tar.gz'
+            dest: /tmp/ovs
+            remote_src: true
+            creates: "/tmp/ovs/openvswitch-{{ openvswitch_version }}"
+        - name: 'Create rpm SPEC file'
+          shell: "sed -e 's/@VERSION@/0.0.1/' rhel/openvswitch-fedora.spec.in > /tmp/ovs.spec"
+          args:
+            chdir: "/tmp/ovs/openvswitch-{{ openvswitch_version }}"
+            creates: /tmp/ovs.spec
+        - name: 'Install build dependencies for OpenVSwitch {{openvswitch_version}}'
+          shell: yum-builddep -y /tmp/ovs.spec
+          args:
+            chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
+          become: true
+        - name: 'Boot OpenVSwitch {{openvswitch_version}}'
+          shell: ./boot.sh
+          args:
+            chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
+            creates: '/tmp/ovs/openvswitch-{{openvswitch_version}}/configure'
+        - name: 'Configure OpenVSwitch {{openvswitch_version}}'
+          shell: ./configure
+          args:
+            chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
+            creates: '/tmp/ovs/openvswitch-{{openvswitch_version}}/Makefile'
+        - name: 'Build OpenVSwitch {{openvswitch_version}}'
+          shell: make rpm-fedora
+          args:
+            chdir: '/tmp/ovs/openvswitch-{{openvswitch_version}}'
+            creates: '/tmp/ovs/openvswitch-{{openvswitch_version}}/rpm/rpmbuild/RPMS/x86_64/openvswitch-{{openvswitch_version}}-1.el7.centos.x86_64.rpm'
+        - name: 'Copy OpenVSwitch packages to cache'
+          copy:
+            src: '/tmp/ovs/openvswitch-{{openvswitch_version}}/rpm/rpmbuild/RPMS/x86_64/openvswitch-{{openvswitch_version}}-1.el7.centos.x86_64.rpm'
+            dest: '{{openvswitch_package_cache}}/'
+            remote_src: true
     - name: 'Install OpenVSwitch {{openvswitch_version}}'
       yum: 'name={{item}}'
       with_items:
         - '/tmp/ovs/openvswitch-{{openvswitch_version}}/rpm/rpmbuild/RPMS/x86_64/openvswitch-{{openvswitch_version}}-1.el7.centos.x86_64.rpm'
       become: true
+      when: openvswitch_package_exists
     - name: Enable openvswitch service
       systemd:
         name: openvswitch

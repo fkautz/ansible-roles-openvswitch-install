@@ -15,6 +15,7 @@ Role Variables
 
 openvswitch_version
 openvswitch_checksum
+openvswitch_package_cache
 
 Dependencies
 ------------
